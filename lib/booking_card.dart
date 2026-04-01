@@ -83,6 +83,7 @@ class _BookingCardState extends State<BookingCard> {
 
   @override
   Widget build(BuildContext context) {
+    // Edit preview: basePrice from Firestore + currently selected facilities at RM50 each
     final totalPrice = widget.basePrice + selectedFacilities.length * 50;
 
     String _formatTimestamp(Timestamp timestamp) {

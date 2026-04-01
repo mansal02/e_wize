@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'styled_page_scaffold.dart';
+import 'utils/auth_utils.dart';
 
 class RegisterPage extends StatefulWidget {
   RegisterPage({super.key});
@@ -34,7 +35,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
         await FirebaseFirestore.instance.collection('Users').add({
           'username': username,
-          'password': password,
+          'password': hashPassword(password),
           'name': '',
           'email': '',
           'phone': '',
@@ -118,11 +119,15 @@ class _RegisterPageState extends State<RegisterPage> {
                       ),
                       obscureText: true,
                       onChanged: (val) => confirmPassword = val.trim(),
-                      validator:
-                          (val) =>
-                              val == null || val.isEmpty
-                                  ? 'Confirm your password'
-                                  : null,
+                      validator: (val) {
+                        if (val == null || val.isEmpty) {
+                          return 'Confirm your password';
+                        }
+                        if (val.trim() != password) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
                     ),
                     SizedBox(height: 24),
                     SizedBox(

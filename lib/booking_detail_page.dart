@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'utils/price_utils.dart';
 
 class BookingDetailsPage extends StatefulWidget {
   final String username;
@@ -27,16 +28,15 @@ class _BookingDetailsPageState extends State<BookingDetailsPage>
 
   double _calculateTotalPrice() {
     final basePrice = (widget.hallData['price'] as num).toDouble();
-    final facilityCost = selectedFacilities.length * 50;
-
-    int dayCount = 0;
-    if (startDate != null && endDate != null) {
-      dayCount = endDate!.difference(startDate!).inDays + 1;
+    if (startDate == null || endDate == null) {
+      return basePrice + (selectedFacilities.length * 50);
     }
-
-    final durationCost = dayCount * 130;
-
-    return basePrice + facilityCost + durationCost;
+    return calculateTotalPrice(
+      basePrice: basePrice,
+      facilities: selectedFacilities,
+      startDate: startDate!,
+      endDate: endDate!,
+    );
   }
 
   @override
@@ -255,6 +255,41 @@ class _BookingDetailsPageState extends State<BookingDetailsPage>
 
   Future<bool> _saveBookingToFirestore(Map<String, dynamic> booking) async {
     try {
+      // Check for booking conflicts before writing
+      final hallTitle = booking['hall']['title'] as String;
+      final selectedStart = booking['startDate'] as DateTime;
+      final selectedEnd = booking['endDate'] as DateTime;
+
+      final existingBookings =
+          await FirebaseFirestore.instance
+              .collection('hallbook')
+              .where('HallType', isEqualTo: hallTitle)
+              .get();
+
+      for (final doc in existingBookings.docs) {
+        final eventTime = (doc.data())['EventTime'] as String?;
+        if (eventTime == null) continue;
+
+        final parts = eventTime.split(' to ');
+        if (parts.length != 2) continue;
+
+        final existingStart = DateTime.parse(parts[0].trim());
+        final existingEnd = DateTime.parse(parts[1].trim());
+
+        // Overlap: selectedStart <= existingEnd && selectedEnd >= existingStart
+        if (!selectedStart.isAfter(existingEnd) &&
+            !selectedEnd.isBefore(existingStart)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'This hall is already booked for the selected dates. Please choose different dates.',
+              ),
+            ),
+          );
+          return false;
+        }
+      }
+
       final username = booking['username'];
 
       // get the user doc from collection
@@ -276,13 +311,15 @@ class _BookingDetailsPageState extends State<BookingDetailsPage>
 
       final start = booking['startDate'] as DateTime;
       final end = booking['endDate'] as DateTime;
-      final duration = end.difference(start).inDays + 1;
 
       final hallPrice = (booking['hall']['price'] as num).toDouble();
       final facilities = booking['facilities'] as List<String>;
-      final facilityCost = facilities.length * 50;
-      final durationCost = duration * 130;
-      final total = hallPrice + facilityCost + durationCost;
+      final total = calculateTotalPrice(
+        basePrice: hallPrice,
+        facilities: facilities,
+        startDate: start,
+        endDate: end,
+      );
 
       await FirebaseFirestore.instance.collection('hallbook').add({
         'UserID': userId,

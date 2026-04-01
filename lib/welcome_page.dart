@@ -64,8 +64,8 @@ class _WelcomePageState extends State<WelcomePage> {
           },
         ),
       ],
-      body: FutureBuilder<QuerySnapshot>(
-        future: FirebaseFirestore.instance.collection('Halls').get(),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('Halls').snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData)
             return Center(child: CircularProgressIndicator());

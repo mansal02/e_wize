@@ -28,7 +28,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         SnackBar(content: Text('User and their bookings deleted')),
       );
 
-      setState(() {}); // Refresh
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -55,7 +54,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           .collection('hallbook')
           .doc(docId)
           .delete();
-      setState(() {});
     } catch (e) {
       ScaffoldMessenger.of(
         context,
@@ -86,8 +84,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildUserManagementTab() {
-    return FutureBuilder<QuerySnapshot>(
-      future: FirebaseFirestore.instance.collection('Users').get(),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('Users').snapshots(),
       builder: (context, userSnapshot) {
         if (userSnapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
@@ -158,12 +156,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildBookingManagementTab() {
-    return FutureBuilder<QuerySnapshot>(
-      future:
+    return StreamBuilder<QuerySnapshot>(
+      stream:
           FirebaseFirestore.instance
               .collection('hallbook')
               .orderBy('BookTime', descending: true)
-              .get(),
+              .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
@@ -214,8 +212,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 
   Widget _buildHallManagementTab() {
-    return FutureBuilder<QuerySnapshot>(
-      future: FirebaseFirestore.instance.collection('Halls').get(),
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('Halls').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Center(child: CircularProgressIndicator());
@@ -288,7 +286,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                 .collection('Halls')
                                 .doc(hallDoc.id)
                                 .update({'price': newPrice});
-                            setState(() {});
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(content: Text('$title price updated')),
@@ -321,6 +318,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         appBar: AppBar(
           title: Text('EventWize Admin'),
           actions: [
+            // Summary counts use FutureBuilder; this re-triggers it after changes
+            // Tab StreamBuilders auto-update without this button
+            IconButton(
+              icon: Icon(Icons.refresh),
+              onPressed: () => setState(() {}),
+            ),
             IconButton(
               icon: Icon(Icons.logout),
               onPressed: () {

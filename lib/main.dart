@@ -8,8 +8,6 @@ import 'admin_dashboard_page.dart';
 import 'booking_detail_page.dart';
 import 'firebase_options.dart';
 
-List<Map<String, String>> userBookings = [];
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -24,6 +22,7 @@ class EventHallApp extends StatefulWidget {
 
 class _EventHallAppState extends State<EventHallApp> {
   String? loggedInUser;
+  bool isAdmin = false;
 
   void _onLoginSuccess(String username) {
     setState(() {
@@ -31,9 +30,16 @@ class _EventHallAppState extends State<EventHallApp> {
     });
   }
 
+  void _onAdminLoginSuccess() {
+    setState(() {
+      isAdmin = true;
+    });
+  }
+
   void _onLogout() {
     setState(() {
       loggedInUser = null;
+      isAdmin = false;
     });
   }
 
@@ -81,6 +87,14 @@ class _EventHallAppState extends State<EventHallApp> {
             );
 
           case '/admin':
+            if (!isAdmin) {
+              return MaterialPageRoute(
+                builder: (_) => LoginPage(
+                  onLoginSuccess: _onLoginSuccess,
+                  onAdminLoginSuccess: _onAdminLoginSuccess,
+                ),
+              );
+            }
             return MaterialPageRoute(
               builder: (context) => AdminDashboardPage(),
             );
@@ -91,6 +105,7 @@ class _EventHallAppState extends State<EventHallApp> {
             return MaterialPageRoute(
               builder: (_) => LoginPage(
                 onLoginSuccess: _onLoginSuccess,
+                onAdminLoginSuccess: _onAdminLoginSuccess,
                 redirected: args?['redirected'] ?? false,
               ),
             );
