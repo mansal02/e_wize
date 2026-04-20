@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'review_section.dart';
 import 'utils/price_utils.dart';
 
 class BookingDetailsPage extends StatefulWidget {
@@ -309,6 +310,8 @@ class _BookingDetailsPageState extends State<BookingDetailsPage>
   @override
   Widget build(BuildContext context) {
     final hall = widget.hallData;
+    final discussionId =
+        (hall['id'] ?? hall['title'] ?? 'general-hall-discussion').toString();
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
@@ -375,7 +378,14 @@ class _BookingDetailsPageState extends State<BookingDetailsPage>
                       color: Color(0xFF42A5F5),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 16),
+
+                  EventChatSection(
+                    discussionId: discussionId,
+                    isLoggedIn: widget.username.isNotEmpty,
+                  ),
+
+                  const SizedBox(height: 24),
 
                   // TabBar
                   DefaultTabController(
